@@ -923,6 +923,54 @@ enum xnn_status xnn_define_multiply2(
   uint32_t output_id,
   uint32_t flags);
 
+// Cap operations applied to logits (Q * K) of attention operator.
+enum xnn_attention_logits_cap_type {
+  // No capping.
+  xnn_attention_logits_cap_type_none = 0,
+  // Cap the absolute values of logits by tanh: tanh(logits / cap) * cap
+  xnn_attention_logits_cap_type_tanh
+};
+
+// Params when the cap type is xnn_attention_logits_cap_type_tanh.
+struct xnn_attention_logits_cap_tanh_params {
+  float cap;
+};
+
+/// Define a Scaled Dot Attention Node and add it to a Subgraph.
+///
+/// The Scaled Dot Attention Node computes a multi-head or multi-query scaled dot attention on the query, key, and value
+/// tensors.
+///
+/// @param subgraph - a Subgraph object that will own the created Node.
+/// @param cap_type - type of cap to be applied to the logits.
+/// @param cap_tanh_params - parameters for the cap.
+/// @param query_id - Value ID for the query tensor. The query tensor must be an 4D tensor defined in the @a subgraph
+///                   with [N, H, T, C] dimensions.
+/// @param key_id - Value ID for the key tensor. The key tensor must be an 4D tensor defined in the @a subgraph with
+///                 [N, H, U, C] (multi-head) or [N, 1, U, C] (multi-query) dimensions.
+/// @param value_id - Value ID for the value tensor. The value tensor must be an 4D tensor defined in the @a subgraph
+///                   with [N, H, U, C] (multi-head) or [N, 1, U, C] (multi-query) dimensions. It must have the same
+///                   dimensions as the key.
+/// @param scale_id - Value ID for the scale tensor. The scale tensor must be an 1D tensor defined in the @a subgraph
+///                   with [C] dimensions. The query tensor is multiplied with this scale tensor before the dot product
+///                   with the key tensor.
+/// @param mask_id - Value ID for the mask tensor. The maks tensor must be an 2D tensor defined in the @a subgraph with
+///                  [T, U] dimensions. The mask tensor is added to the logits (query dot value).
+/// @param output_id - Value ID for the output tensor. The output tensor must be a 4D tensor defined in the @a subgraph
+///                    with dimensions [N, H, T, C].
+/// @param flags - binary features of the Scaled Dot Attention Node. No supported flags are currently defined.
+enum xnn_status xnn_define_scaled_dot_attention(
+  xnn_subgraph_t subgraph,
+  enum xnn_attention_logits_cap_type cap_type,
+  struct xnn_attention_logits_cap_tanh_params cap_tanh_params,
+  uint32_t query_id,
+  uint32_t key_id,
+  uint32_t value_id,
+  uint32_t scale_id,
+  uint32_t mask_id,
+  uint32_t output_id,
+  uint32_t flags);
+
 /// Define a Subtract Node and add it to a Subgraph.
 ///
 /// The Subtract Node computes elementwise subtraction of two tensor inputs with numpy broadcasting rules.
@@ -5487,19 +5535,6 @@ enum xnn_status xnn_run_convert_nc_qu8_f32(
   uint8_t input_zero_point,
   uint32_t flags,
   pthreadpool_t threadpool);
-
-// Cap operations applied to logits (Q * K) of attention operator.
-enum xnn_attention_logits_cap_type {
-  // No capping.
-  xnn_attention_logits_cap_type_none = 0,
-  // Cap the absolute values of logits by tanh: tanh(logits / cap) * cap
-  xnn_attention_logits_cap_type_tanh
-};
-
-// Params when the cap type is xnn_attention_logits_cap_type_tanh.
-struct xnn_attention_logits_cap_tanh_params {
-  float cap;
-};
 
 // N: batch size
 // H: number of heads
